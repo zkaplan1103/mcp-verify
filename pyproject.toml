@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mcp-verify"
+version = "0.1.0"
+description = "Benchmarked hallucination detector: checks a DRAFT against a SOURCE and returns the specific unsupported claims."
+requires-python = ">=3.9"
+dependencies = [
+    "anthropic>=0.40",
+    "pydantic>=2.5",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.15"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+# Defaults (pyflakes F, pycodestyle E) plus import-sorting (I) and bugbears (B).
+extend-select = ["I", "B"]
+
+[tool.setuptools.packages.find]
+# Only the engine ships in the wheel; eval/ and tests/ are dev/benchmark dirs.
+include = ["mcp_verify*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
