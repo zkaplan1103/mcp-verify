@@ -6,18 +6,22 @@ build-backend = "setuptools.build_meta"
 name = "mcp-verify"
 version = "0.1.0"
 description = "Benchmarked hallucination detector: checks a DRAFT against a SOURCE and returns the specific unsupported claims."
-requires-python = ">=3.9"
+requires-python = ">=3.10"  # the mcp SDK requires 3.10+
 dependencies = [
     "anthropic>=0.40",
+    "mcp>=1.9",
     "pydantic>=2.5",
 ]
+
+[project.scripts]
+mcp-verify = "mcp_verify.server:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.15"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.lint]
 # Defaults (pyflakes F, pycodestyle E) plus import-sorting (I) and bugbears (B).

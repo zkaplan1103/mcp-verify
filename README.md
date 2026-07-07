@@ -13,6 +13,25 @@ for f in report.failures:
     print(f.claim, "—", f.reason)
 ```
 
+## Run as MCP server
+
+One tool, `verify(source, draft)`, over stdio:
+
+```bash
+pip install mcp-verify   # or: pip install -e . from a checkout
+claude mcp add verify -- mcp-verify
+```
+
+Two modes, auto-selected (`MCP_VERIFY_MODE=api|sampling` overrides):
+
+- **sampling** (default, no key): the server asks the HOST's model to do the
+  verification via MCP sampling — no ANTHROPIC_API_KEY, no extra cost.
+- **api**: if `ANTHROPIC_API_KEY` is set in the server's environment, it calls
+  the pinned benchmark model directly — the exact path BENCHMARK.md measures.
+  `claude mcp add verify -e ANTHROPIC_API_KEY=sk-... -- mcp-verify`
+
+Both return the same JSON: `{"passed", "failures": [...], "mode"}`.
+
 ## The benchmark
 
 The eval suite (82 labeled cases across 4 domains, a hallucination taxonomy, and a
