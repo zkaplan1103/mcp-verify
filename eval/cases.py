@@ -618,10 +618,11 @@ def load_cases() -> List[EvalCase]:
     from eval.cases_education import load_education_cases
     from eval.cases_legal import load_legal_cases
     from eval.cases_medical import load_medical_cases
+    from eval.cases_redteam import load_redteam_cases
 
     obvious = _hand_written() + _generated()
     return (
         obvious + _adversarial() + _hard()
         + load_legal_cases() + load_medical_cases() + load_education_cases()
-        + load_adversarial_cases()
+        + load_adversarial_cases() + load_redteam_cases()
     )

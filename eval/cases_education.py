@@ -104,14 +104,19 @@ def load_education_cases() -> List[EvalCase]:
             profile=p(), opportunity=o(), difficulty="adversarial",
             eligibility_sentences=[
                 Sentence(
-                    "The organization targets students in grades K-12 who are "
-                    "underrepresented in STEM fields.",
+                    "The organization serves Title I students who are "
+                    "underrepresented in STEM.",
                     planted=False, tag="edu-k12-grounded",
                 ),
                 Sentence(
+                    # Parrots the opp's partnership requirement; the profile says the
+                    # org PROVIDES programs at Title I schools, never that it holds
+                    # formal school partnerships. Same eligibility-parroting class
+                    # fixed earlier in legal/med. (Tag kept for report continuity.)
                     "The program partners with Title I schools in the Atlanta metro "
                     "area, satisfying the partnership requirement.",
-                    planted=False, tag="edu-partnership-grounded",
+                    planted=True, tag="edu-partnership-grounded",
+                    hallucination_type="unsupported-eligibility",
                 ),
                 Sentence(
                     "Since its founding the program has served over 30,000 students "
@@ -201,8 +206,10 @@ def load_education_cases() -> List[EvalCase]:
             profile=p(), opportunity=o(), difficulty="obvious",
             eligibility_sentences=[
                 Sentence(
+                    # "K-12" is the opportunity's language, not profile-stated; a
+                    # clean control must contain only profile-supported facts.
                     "The applicant is a 501(c)(3) providing after-school STEM "
-                    "enrichment to K-12 students at Title I schools.",
+                    "enrichment to students at Title I schools in metro Atlanta.",
                     planted=False, tag="edu-clean-elig-1",
                 ),
                 Sentence(

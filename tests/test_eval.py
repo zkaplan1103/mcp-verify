@@ -361,6 +361,76 @@ def test_adversarial_dry_run():
 
 
 # --------------------------------------------------------------------------- #
+# Red-team cases (rt/)
+# --------------------------------------------------------------------------- #
+
+def test_redteam_cases_load():
+    from eval.cases_redteam import load_redteam_cases
+
+    rt = load_redteam_cases()
+    assert len(rt) == 24
+    names = [c.name for c in rt]
+    assert len(names) == len(set(names))
+    assert all(c.name.startswith("rt/") for c in rt)
+    assert all(c.difficulty == "hard" for c in rt)
+
+
+def test_redteam_planted_have_valid_taxonomy():
+    from eval.cases_redteam import load_redteam_cases
+    from eval.taxonomy import TAXONOMY_IDS
+
+    for case in load_redteam_cases():
+        for s in case.all_sentences():
+            if s.planted:
+                assert s.hallucination_type in TAXONOMY_IDS, (
+                    f"{case.name}/{s.tag}: bad type {s.hallucination_type!r}"
+                )
+
+
+def test_redteam_tags_unique_and_disjoint_from_suite():
+    from eval.cases_redteam import load_redteam_cases
+
+    rt_tags = [s.tag for c in load_redteam_cases() for s in c.all_sentences()]
+    assert len(rt_tags) == len(set(rt_tags)), "duplicate tags within rt cases"
+    assert all(t.startswith("rt-") for t in rt_tags)
+    other_tags = {
+        s.tag
+        for c in load_cases() if not c.name.startswith("rt/")
+        for s in c.all_sentences()
+    }
+    assert not set(rt_tags) & other_tags, "rt tags collide with the rest of the suite"
+
+
+def test_redteam_echo_traps_are_clean():
+    from eval.cases_redteam import load_redteam_cases
+
+    echo = [c for c in load_redteam_cases() if c.name.startswith("rt/echo-trap-")]
+    assert len(echo) == 4
+    assert all(len(c.planted_tags()) == 0 for c in echo)
+
+
+def test_load_cases_total_count():
+    assert len(load_cases()) == 106  # 82 baseline + 24 red-team
+
+
+def test_edu_label_fixes_hold():
+    from eval.cases_education import load_education_cases
+
+    by_name = {c.name: c for c in load_education_cases()}
+
+    clean = by_name["edu/clean-no-planted"]
+    assert clean.planted_tags() == []  # still a zero-planted control
+    assert all("K-12" not in s.text for s in clean.all_sentences())
+
+    reach = by_name["edu/inflated-student-reach"]
+    partnership = next(
+        s for s in reach.all_sentences() if s.tag == "edu-partnership-grounded"
+    )
+    assert partnership.planted is True
+    assert partnership.hallucination_type == "unsupported-eligibility"
+
+
+# --------------------------------------------------------------------------- #
 # Multi-run stats (Task 4)
 # --------------------------------------------------------------------------- #
 
