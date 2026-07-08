@@ -49,3 +49,58 @@ def test_core_failures_force_not_passed():
     )
     report = verify_core.verify(client, source="s", draft="d")
     assert report.passed is False
+
+
+def _reply(*claims: str) -> str:
+    return json.dumps(
+        {
+            "passed": not claims,
+            "failures": [{"claim": c, "reason": "not in source"} for c in claims],
+        }
+    )
+
+
+def test_consistency_majority_claim_confirmed():
+    # Same claim, paraphrased but token-similar, in 3/3 runs -> confirmed failure.
+    client = FakeLLMClient([
+        _reply("The grant awards 2 million dollars annually"),
+        _reply("grant awards 2 million dollars every year"),
+        _reply("The grant awards 2 million dollars annually to applicants"),
+    ])
+    report = verify_core.verify(client, source="s", draft="d", consistency=3)
+
+    assert len(client.calls) == 3
+    assert report.passed is False
+    assert [f.claim for f in report.failures] == ["The grant awards 2 million dollars annually"]
+    assert report.uncertain == []
+
+
+def test_consistency_minority_claim_uncertain():
+    # Claim in only 1/3 runs -> uncertain, not a failure; report still passes.
+    client = FakeLLMClient([_reply("The award is 2 million dollars"), _reply(), _reply()])
+    report = verify_core.verify(client, source="s", draft="d", consistency=3)
+
+    assert report.passed is True
+    assert report.failures == []
+    assert [f.claim for f in report.uncertain] == ["The award is 2 million dollars"]
+
+
+def test_consistency_no_strict_majority_is_uncertain():
+    # 1/2 runs is not a strict majority (> N/2) -> uncertain.
+    client = FakeLLMClient([_reply("The award is 2 million dollars"), _reply()])
+    report = verify_core.verify(client, source="s", draft="d", consistency=2)
+
+    assert report.passed is True
+    assert report.failures == []
+    assert len(report.uncertain) == 1
+
+
+def test_consistency_default_is_single_call_identical_report():
+    reply = _reply("x")
+    client = FakeLLMClient(reply)
+    report = verify_core.verify(client, source="s", draft="d", consistency=1)
+    baseline = verify_core.verify(FakeLLMClient(reply), source="s", draft="d")
+
+    assert len(client.calls) == 1
+    assert report == baseline
+    assert report.uncertain == []

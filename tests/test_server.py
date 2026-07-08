@@ -111,6 +111,35 @@ def test_api_mode_without_key_returns_error_json(monkeypatch):
     assert "ANTHROPIC_API_KEY" in data["error"]
 
 
+def test_api_mode_consistency_splits_confirmed_and_uncertain(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.delenv("MCP_VERIFY_MODE", raising=False)
+    fake = FakeLLMClient([
+        json.dumps({"passed": False, "failures": [
+            {"claim": "Serves 10k people", "reason": "not in source"},
+            {"claim": "Founded in 1999 by two engineers", "reason": "not in source"},
+        ]}),
+        json.dumps({"passed": False, "failures": [
+            {"claim": "It serves 10k people annually", "reason": "not in source"},
+        ]}),
+        json.dumps({"passed": False, "failures": [
+            {"claim": "serves 10k people", "reason": "not in source"},
+        ]}),
+    ])
+    monkeypatch.setattr(server, "build_default_client", lambda: fake)
+
+    result = asyncio.run(
+        server.verify("SOURCE", "DRAFT", _ctx(StubSession()), consistency=3)
+    )
+    data = json.loads(result)
+
+    assert len(fake.calls) == 3
+    assert data["mode"] == "api"
+    assert data["passed"] is False
+    assert [f["claim"] for f in data["failures"]] == ["Serves 10k people"]
+    assert [f["claim"] for f in data["uncertain"]] == ["Founded in 1999 by two engineers"]
+
+
 def test_unparseable_sampling_reply_returns_error_json(monkeypatch):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("MCP_VERIFY_MODE", raising=False)

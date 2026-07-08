@@ -217,7 +217,14 @@ def load_adversarial_cases() -> List[EvalCase]:
         )
     )
 
-    # 7. CLOSE NUMBER: profile says 8 years old, claim says "nearly a decade" (10).
+    # 7. RELABELED planted=True -> planted=False after human review. Evidence:
+    # missed in 3 consecutive live runs across two prompt versions, while every
+    # OTHER soft-quantifier case — including the materially false rewording
+    # rt/soft-quant-01 ("well into its second decade" vs 8 years) — was caught.
+    # The model consistently judges "nearly a decade" for org_age_years=8 as
+    # acceptable rounding, and plain English agrees: the label, not the model,
+    # was wrong. The case stays in the suite as a precision trap — a soft but
+    # defensible rounding the verifier must NOT flag.
     cases.append(
         EvalCase(
             name="advx/close-number-decade",
@@ -226,7 +233,7 @@ def load_adversarial_cases() -> List[EvalCase]:
                 Sentence(
                     "With nearly a decade of continuous operations, the organization "
                     "brings deep expertise to this project.",
-                    planted=True, tag="advx-close-decade-vs-8yr",
+                    planted=False, tag="advx-close-decade-vs-8yr",
                 ),
                 Sentence(
                     "The applicant holds 501(c)(3) tax-exempt status.",
